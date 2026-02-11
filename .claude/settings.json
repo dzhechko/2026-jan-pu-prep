@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$TOOL_INPUT\" | grep -qiE '(TELEGRAM_BOT_TOKEN|OPENAI_API_KEY|DB_PASSWORD|SECRET_KEY|YUKASSA_SECRET).*=.*[A-Za-z0-9]'; then echo 'BLOCKED: Potential secret detected in file write. Use environment variables instead.' >&2; exit 1; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>НутриМайнд — CJM Prototype (3 варианта)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  body { font-family: 'Inter', sans-serif; }
+  .phone-frame {
+    width: 375px; height: 720px;
+    border-radius: 40px;
+    border: 8px solid #1f2937;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+    position: relative;
+  }
+  .phone-frame::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 120px; height: 28px;
+    background: #1f2937;
+    border-radius: 0 0 16px 16px;
+    z-index: 50;
+  }
+  .screen-scroll { height: 100%; overflow-y: auto; }
+  .screen-scroll::-webkit-scrollbar { display: none; }
+  .fade-in { animation: fadeIn 0.3s ease-in; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .pulse { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+</style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback, useMemo } = React;
+
+// ═══ DATA from M2 Product Discovery Brief ═══
+const VARIANTS = {
+  A: {
+    name: "КПТ-Профиль", emoji: "🧠",
+    col: "emerald", bg: "bg-emerald-500", bgl: "bg-emerald-50", bdr: "border-emerald-200",
+    txt: "text-emerald-700", ring: "ring-emerald-500",
+    landing: {
+      hl: "Похудей через психологию привычек",
+      sub: "Узнай ПОЧЕМУ ты переедаешь — и сломай цикл. Метод когнитивно-поведенческой терапии, адаптированный AI под тебя.",
+      cta: "Пройти КПТ-профилирование",
+      social: "45M+ людей изменили пищевые привычки с CBT-подходом"
+    },
+    onboarding: {
+      q1: { q: "Что чаще всего запускает переедание?", opts: ["Стресс на работе", "Скука дома", "Эмоции (грусть/радость)", "За компанию с друзьями"] },
+      q2: { q: "Что ты чувствуешь ПОСЛЕ срыва?", opts: ["Вину и стыд", "Безразличие", "Злость на себя", "Тревогу о здоровье"] },
+      style: "Глубокий квиз → КПТ-профиль"
+    },
+    aha: {
+      title: "Твой КПТ-профиль готов",
+      desc: "Ты — Эмоциональный Едок (тип 2 из 5)",
+      wow: "Твой главный триггер: стресс → comfort food → вина → ещё больше стресса. Это цикл, и мы знаем как его сломать.",
+      kpi: "78% людей с таким профилем меняют привычки за 8 недель",
+      insight: "Персональный план из 20 КПТ-уроков"
+    },
+    dash: {
+      hook: "Ежедневный урок 5 мин",
+      lesson: "Урок 3: Почему мозг путает стресс с голодом",
+      stats: { streak: 5, lessons: "3/20", mood: "Стабильно" },
+      progress: "Триггеров распознано: 12 из 15"
+    },
+    pay: {
+      when: "Сразу после КПТ-профиля (День 1)",
+      frame: "Разблокируй свой персональный план",
+      price: "499 ₽/мес",
+      hook: "Первые 3 урока — бесплатно. Полный курс — 20 уроков."
+    },
+    inv: {
+      hook: "Поделись КПТ-профилем с подругой",
+      mech: "Вы обе получите неделю Premium бесплатно"
+    }
+  },
+  B: {
+    name: "7-Day Proof", emoji: "📊",
+    col: "blue", bg: "bg-blue-500", bgl: "bg-blue-50", bdr: "border-blue-200",
+    txt: "text-blue-700", ring: "ring-blue-500",
+    landing: {
+      hl: "Стань экспертом своего тела за 7 дней",
+      sub: "Трекер питания + микро-привычки + аналитика. Увидь первые результаты через неделю — без диет и ограничений.",
+      cta: "Начать 7-дневный челлендж",
+      social: "Средний результат: -1.2 кг за первую неделю"
+    },
+    onboarding: {
+      q1: { q: "Твоя главная цель?", opts: ["Снизить вес", "Улучшить здоровье", "Больше энергии", "Понять своё тело"] },
+      q2: { q: "Сколько времени готов(а) уделять в день?", opts: ["5 минут", "10 минут", "15+ минут", "Сколько нужно"] },
+      style: "Быстрый старт → сразу в трекер"
+    },
+    aha: {
+      title: "Твои результаты за 7 дней",
+      desc: "Вес: -1.1 кг | Калории: -340/день в среднем",
+      wow: "Ты сократил(а) перекусы на 60% просто отслеживая паттерны. Без диеты.",
+      kpi: "89% пользователей видят результат за первую неделю",
+      insight: "AI выявил: твой пик переедания — 16:00-18:00"
+    },
+    dash: {
+      hook: "Dashboard + streaks + achievements",
+      lesson: "Achievement: 7 дней подряд!",
+      stats: { streak: 7, weight: "-1.1 кг", calories: "1,840 avg" },
+      progress: "Цель: -5 кг → прогресс 22%"
+    },
+    pay: {
+      when: "После 7 дней (после первых результатов)",
+      frame: "Продолжи прогресс — разблокируй AI-инсайты",
+      price: "499 ₽/мес",
+      hook: "7 дней бесплатно. Дальше — с персональным AI-тренером."
+    },
+    inv: {
+      hook: "Позови друга на 7-Day Challenge",
+      mech: "Совместный челлендж: видите прогресс друг друга"
+    }
+  },
+  C: {
+    name: "AI-Детектив", emoji: "🔍",
+    col: "violet", bg: "bg-violet-500", bgl: "bg-violet-50", bdr: "border-violet-200",
+    txt: "text-violet-700", ring: "ring-violet-500",
+    landing: {
+      hl: "Разберись почему ты срываешься",
+      sub: "AI анализирует твои данные и находит скрытые паттерны переедания. Не диета — расследование.",
+      cta: "Начать AI-расследование",
+      social: "AI находит паттерн срывов за 3-5 дней"
+    },
+    onboarding: {
+      q1: { q: "Как часто случаются срывы?", opts: ["Каждый день", "2-3 раза в неделю", "Раз в неделю", "Пару раз в месяц"] },
+      q2: { q: "Что обычно происходит перед срывом?", opts: ["Пропускаю приём пищи", "Конфликт/стресс", "Вижу еду/рекламу", "Просто привычка"] },
+      style: "AI-интервью → анализ паттернов"
+    },
+    aha: {
+      title: "AI нашёл твой паттерн!",
+      desc: "Паттерн: Стресс → Пропуск обеда → Переедание вечером",
+      wow: "В 73% случаев твои срывы происходят после пропущенного обеда на работе. Это не слабость воли — это биохимия.",
+      kpi: "После 3 AI-инсайтов срывы сокращаются на 40%",
+      insight: "Триггер дня: сегодня высокий риск срыва в 18:00"
+    },
+    dash: {
+      hook: "AI-инсайты + триггер дня",
+      lesson: "Инсайт #4: Сон < 6ч = +35% вероятность срыва",
+      stats: { insights: 4, triggers: "3 найдено", risk: "Низкий сегодня" },
+      progress: "Срывов на этой неделе: 1 (было 5)"
+    },
+    pay: {
+      when: "После 3-го AI-инсайта (proof of value)",
+      frame: "AI уже работает — разблокируй полный анализ",
+      price: "499 ₽/мес",
+      hook: "3 инсайта бесплатно. Полный AI-анализ — в Premium."
+    },
+    inv: {
+      hook: "Узнай паттерн подруги — вместе легче",
+      mech: "Парный AI-анализ: найдите общие триггеры"
+    }
+  }
+};
+
+const CJM_META = {
+  landing:    { stage: "Awareness",  aarrr: "Acquisition",  q: "Как формулируем ценность? Что цепляет с первого экрана?" },
+  onboarding: { stage: "Interest",   aarrr: "Activation",   q: "Как быстро доводим до первого действия? Какие вопросы задаём?" },
+  aha:        { stage: "Desire",     aarrr: "Activation",   q: "Что создаёт WOW? Когда пользователь понимает ценность?" },
+  dash:       { stage: "Engagement", aarrr: "Retention",     q: "Что возвращает каждый день? Как формируется привычка?" },
+  pay:        { stage: "Decision",   aarrr: "Revenue",       q: "Когда и как просим деньги? Что уже доказано к этому моменту?" },
+  inv:        { stage: "Advocacy",   aarrr: "Referral",      q: "Зачем приглашать друзей? Что получают оба?" },
+};
+
+const SCREENS = ["landing","onboarding","aha","dash","pay","inv"];
+const SCREEN_NAMES = { landing:"Landing", onboarding:"Onboarding", aha:"Aha Moment", dash:"Dashboard", pay:"Paywall", inv:"Invite" };
+const SCREEN_ICONS = { landing:"🏠", onboarding:"📝", aha:"✨", dash:"📱", pay:"💳", inv:"🎁" };
+
+// ═══ PHONE SCREEN COMPONENTS ═══
+
+function LandingScreen({ v, d }) {
+  return (
+    <div className={`screen-scroll ${d.bgl}`}>
+      <div className={`pt-10 pb-6 px-6 ${d.bg} text-white`}>
+        <div className="text-4xl mb-3">{d.emoji}</div>
+        <h1 className="text-2xl font-bold leading-tight mb-3">{v.hl}</h1>
+        <p className="text-white/80 text-sm leading-relaxed">{v.sub}</p>
+      </div>
+      <div className="px-6 py-6 space-y-4">
+        <button className={`w-full py-4 rounded-2xl ${d.bg} text-white font-bold text-lg shadow-lg hover:opacity-90 transition`}>
+          {v.cta} →
+        </button>
+        <p className="text-center text-xs text-gray-500">{v.social}</p>
+        <div className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm">
+          <div className="text-2xl">⭐</div>
+          <div>
+            <div className="font-semibold text-sm text-gray-800">4.7 из 5</div>
+            <div className="text-xs text-gray-500">12,400+ отзывов</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OnboardingScreen({ v, d }) {
+  const [step, setStep] = useState(0);
+  const q = step === 0 ? v.q1 : v.q2;
+  return (
+    <div className={`screen-scroll ${d.bgl} pt-12 px-6`}>
+      <div className="flex gap-2 mb-6">
+        <div className={`h-1.5 flex-1 rounded-full ${step >= 0 ? d.bg : 'bg-gray-200'}`}/>
+        <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? d.bg : 'bg-gray-200'}`}/>
+        <div className="h-1.5 flex-1 rounded-full bg-gray-200"/>
+      </div>
+      <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider">{v.style}</p>
+      <h2 className="text-xl font-bold text-gray-900 mb-6">{q.q}</h2>
+      <div className="space-y-3">
+        {q.opts.map((o, i) => (
+          <button key={i} onClick={() => setStep(1)}
+            className={`w-full text-left p-4 rounded-xl border-2 ${d.bdr} bg-white hover:${d.bgl} transition font-medium text-gray-800`}>
+            {o}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AhaScreen({ v, d }) {
+  return (
+    <div className={`screen-scroll ${d.bgl} pt-12 px-6`}>
+      <div className="text-center mb-6">
+        <div className="text-5xl mb-3 pulse">✨</div>
+        <h2 className="text-xl font-bold text-gray-900">{v.title}</h2>
+      </div>
+      <div className={`p-5 rounded-2xl bg-white shadow-lg border-2 ${d.bdr} mb-4`}>
+        <div className={`text-sm font-bold ${d.txt} mb-2`}>{v.desc}</div>
+        <p className="text-gray-600 text-sm leading-relaxed">{v.wow}</p>
+      </div>
+      <div className={`p-4 rounded-xl ${d.bg} text-white mb-4`}>
+        <div className="text-2xl font-bold mb-1">{v.kpi}</div>
+      </div>
+      <div className="p-4 rounded-xl bg-white shadow-sm">
+        <div className="text-sm font-semibold text-gray-700 mb-1">Следующий шаг:</div>
+        <div className={`text-sm ${d.txt} font-medium`}>{v.insight}</div>
+      </div>
+    </div>
+  );
+}
+
+function DashScreen({ v, d }) {
+  return (
+    <div className={`screen-scroll bg-white pt-12 px-6`}>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <div className="text-sm text-gray-500">Сегодня</div>
+          <div className="text-lg font-bold text-gray-900">{v.hook}</div>
+        </div>
+        <div className={`w-12 h-12 rounded-full ${d.bg} flex items-center justify-center text-white text-xl`}>
+          {d.emoji}
+        </div>
+      </div>
+      <div className={`p-4 rounded-xl ${d.bgl} border ${d.bdr} mb-4`}>
+        <div className={`text-sm font-semibold ${d.txt} mb-2`}>{v.lesson}</div>
+        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div className={`h-full ${d.bg} rounded-full`} style={{width:'60%'}}/>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        {Object.entries(v.stats).map(([k,val]) => (
+          <div key={k} className="p-3 bg-gray-50 rounded-xl text-center">
+            <div className="text-lg font-bold text-gray-900">{val}</div>
+            <div className="text-xs text-gray-500 capitalize">{k}</div>
+          </div>
+        ))}
+      </div>
+      <div className="p-4 bg-gray-50 rounded-xl">
+        <div className="text-sm text-gray-600">{v.progress}</div>
+      </div>
+    </div>
+  );
+}
+
+function PayScreen({ v, d }) {
+  return (
+    <div className={`screen-scroll ${d.bgl} pt-12 px-6`}>
+      <div className="text-center mb-6">
+        <div className="text-4xl mb-2">🔓</div>
+        <h2 className="text-xl font-bold text-gray-900">{v.frame}</h2>
+        <p className="text-sm text-gray-500 mt-2">Момент оплаты: {v.when}</p>
+      </div>
+      <div className={`p-6 rounded-2xl bg-white shadow-lg border-2 ${d.bdr} mb-4`}>
+        <div className="flex items-end justify-center gap-1 mb-4">
+          <span className="text-4xl font-extrabold text-gray-900">{v.price}</span>
+        </div>
+        <p className="text-center text-sm text-gray-600 mb-4">{v.hook}</p>
+        <button className={`w-full py-4 rounded-xl ${d.bg} text-white font-bold text-lg`}>
+          Начать Premium
+        </button>
+      </div>
+      <div className="space-y-2 text-sm text-gray-500 px-2">
+        <div className="flex items-center gap-2">✓ КПТ-уроки без ограничений</div>
+        <div className="flex items-center gap-2">✓ AI-коуч 24/7</div>
+        <div className="flex items-center gap-2">✓ Группа поддержки</div>
+        <div className="flex items-center gap-2">✓ Отмена в 1 клик, без скрытых платежей</div>
+      </div>
+    </div>
+  );
+}
+
+function InvScreen({ v, d }) {
+  return (
+    <div className={`screen-scroll ${d.bgl} pt-12 px-6`}>
+      <div className="text-center mb-6">
+        <div className="text-5xl mb-3">🎁</div>
+        <h2 className="text-xl font-bold text-gray-900">{v.hook}</h2>
+      </div>
+      <div className={`p-5 rounded-2xl bg-white shadow-lg border-2 ${d.bdr} mb-4`}>
+        <p className="text-gray-700 text-sm mb-4">{v.mech}</p>
+        <button className={`w-full py-3 rounded-xl ${d.bg} text-white font-bold`}>
+          Пригласить →
+        </button>
+      </div>
+      <div className="p-4 bg-white rounded-xl shadow-sm">
+        <div className="text-sm font-semibold text-gray-700 mb-2">Как это работает:</div>
+        <div className="space-y-2 text-sm text-gray-600">
+          <div>1. Отправь ссылку</div>
+          <div>2. Подруга/друг регистрируется</div>
+          <div>3. Вы оба получаете бонус</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const SCREEN_COMPONENTS = { landing: LandingScreen, onboarding: OnboardingScreen, aha: AhaScreen, dash: DashScreen, pay: PayScreen, inv: InvScreen };
+const SCREEN_DATA_KEYS = { landing: "landing", onboarding: "onboarding", aha: "aha", dash: "dash", pay: "pay", inv: "inv" };
+
+// ═══ CJM OVERLAY BADGE ═══
+function CJMBadge({ screen, show }) {
+  if (!show) return null;
+  const m = CJM_META[screen];
+  return (
+    <div className="absolute top-8 left-2 right-2 z-40 fade-in">
+      <div className="bg-gray-900/95 text-white p-3 rounded-xl text-xs space-y-1 shadow-lg">
+        <div className="flex justify-between">
+          <span className="font-bold">📊 {m.stage}</span>
+          <span className="bg-white/20 px-2 py-0.5 rounded-full">{m.aarrr}</span>
+        </div>
+        <div className="text-white/70 italic">CustDev Q: {m.q}</div>
+      </div>
+    </div>
+  );
+}
+
+// ═══ COMPARISON TABLE ═══
+function CompareTable({ onClose }) {
+  const rows = [
+    { label: "Aha Moment", key: d => d.aha.title },
+    { label: "Entry Hook", key: d => d.landing.hl },
+    { label: "Paywall", key: d => d.pay.when },
+    { label: "Core Loop", key: d => d.dash.hook },
+    { label: "Invite", key: d => d.inv.hook },
+  ];
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold">⚖️ Сравнение вариантов</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-2xl">×</button>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b-2">
+              <th className="text-left py-2 pr-4 text-gray-500 w-28">Параметр</th>
+              {Object.entries(VARIANTS).map(([k,v]) => (
+                <th key={k} className="text-left py-2 px-2"><span className="text-lg">{v.emoji}</span> {v.name}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i} className="border-b">
+                <td className="py-3 pr-4 font-medium text-gray-600">{r.label}</td>
+                {Object.values(VARIANTS).map((v, j) => (
+                  <td key={j} className="py-3 px-2 text-gray-800">{r.key(v)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ═══ BUILDER ═══
+function Builder({ config, setConfig, onClose }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold">🔧 Конфигуратор — собери свой CJM</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-2xl">×</button>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">Выбери лучший экран из каждого варианта:</p>
+        {SCREENS.map(s => (
+          <div key={s} className="mb-4">
+            <div className="text-sm font-semibold text-gray-700 mb-2">{SCREEN_ICONS[s]} {SCREEN_NAMES[s]}</div>
+            <div className="flex gap-2">
+              {["A","B","C"].map(vk => (
+                <button key={vk}
+                  onClick={() => setConfig(prev => ({...prev, [s]: vk}))}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium border-2 transition
+                    ${config[s] === vk
+                      ? `${VARIANTS[vk].bg} text-white border-transparent`
+                      : `bg-white ${VARIANTS[vk].txt} ${VARIANTS[vk].bdr} hover:bg-gray-50`}`}>
+                  {VARIANTS[vk].emoji} {vk}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+        <button onClick={onClose}
+          className="w-full mt-4 py-3 rounded-xl bg-gray-900 text-white font-bold hover:bg-gray-800 transition">
+          ✅ Применить конфигурацию
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══ SCORING ═══
+function Scoring({ onClose, onLock }) {
+  const criteria = [
+    { name: "Конверсия", desc: "Насколько убедительно ведёт к оплате?" },
+    { name: "Retention", desc: "Что возвращает пользователя каждый день?" },
+    { name: "Виральность", desc: "Зачем приглашать друзей?" },
+  ];
+  const [scores, setScores] = useState({ A: {}, B: {}, C: {} });
+  const totals = useMemo(() => {
+    const t = {};
+    ["A","B","C"].forEach(v => {
+      t[v] = Object.values(scores[v]).reduce((a,b) => a+b, 0);
+    });
+    return t;
+  }, [scores]);
+  const winner = Object.entries(totals).sort((a,b) => b[1]-a[1])[0];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl p-6 max-w-3xl w-full max-h-[90vh] overflow-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold">🏆 Оценка вариантов</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-2xl">×</button>
+        </div>
+        <table className="w-full text-sm mb-4">
+          <thead>
+            <tr className="border-b-2">
+              <th className="text-left py-2">Критерий</th>
+              {["A","B","C"].map(v => <th key={v} className="text-center py-2">{VARIANTS[v].emoji} {v}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {criteria.map((c, ci) => (
+              <tr key={ci} className="border-b">
+                <td className="py-3">
+                  <div className="font-medium">{c.name}</div>
+                  <div className="text-xs text-gray-400">{c.desc}</div>
+                </td>
+                {["A","B","C"].map(v => (
+                  <td key={v} className="text-center py-3">
+                    <div className="flex justify-center gap-1">
+                      {[1,2,3,4,5].map(n => (
+                        <button key={n}
+                          onClick={() => setScores(prev => ({...prev, [v]: {...prev[v], [ci]: n}}))}
+                          className={`w-7 h-7 rounded-full text-xs font-bold transition
+                            ${(scores[v][ci] || 0) >= n ? `${VARIANTS[v].bg} text-white` : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}>
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+            <tr className="border-t-2 font-bold">
+              <td className="py-3">ИТОГО</td>
+              {["A","B","C"].map(v => (
+                <td key={v} className={`text-center py-3 text-lg ${winner[0]===v ? VARIANTS[v].txt : ''}`}>
+                  {totals[v]}/15 {winner[0]===v && totals[v]>0 ? '👑' : ''}
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+        {winner[1] > 0 && (
+          <button onClick={() => { onLock(winner[0]); onClose(); }}
+            className={`w-full py-3 rounded-xl ${VARIANTS[winner[0]].bg} text-white font-bold hover:opacity-90 transition`}>
+            ✅ Зафиксировать вариант {winner[0]} ({VARIANTS[winner[0]].name})
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══ LOCKED RESULT ═══
+function LockedBanner({ variant }) {
+  if (!variant) return null;
+  const v = VARIANTS[variant];
+  return (
+    <div className={`${v.bg} text-white px-4 py-3 rounded-xl flex items-center gap-3 mb-4`}>
+      <span className="text-2xl">✅</span>
+      <div>
+        <div className="font-bold">Зафиксирован: {v.emoji} Вариант {variant} — {v.name}</div>
+        <div className="text-white/70 text-xs">Этот CJM передаётся в PRD (Phase 1)</div>
+      </div>
+    </div>
+  );
+}
+
+// ═══ MAIN APP ═══
+function App() {
+  const [activeVariant, setActiveVariant] = useState("A");
+  const [activeScreen, setActiveScreen] = useState("landing");
+  const [showCJM, setShowCJM] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [showScoring, setShowScoring] = useState(false);
+  const [locked, setLocked] = useState(null);
+  const [builderConfig, setBuilderConfig] = useState(
+    Object.fromEntries(SCREENS.map(s => [s, "A"]))
+  );
+
+  const currentVariantData = VARIANTS[activeVariant];
+  const ScreenComp = SCREEN_COMPONENTS[activeScreen];
+  const screenData = currentVariantData[SCREEN_DATA_KEYS[activeScreen]];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 p-4 lg:p-8">
+      {/* Header */}
+      <div className="max-w-6xl mx-auto mb-6">
+        <h1 className="text-2xl font-extrabold text-gray-900">НутриМайнд — CJM Prototype</h1>
+        <p className="text-gray-500 text-sm">3 варианта Customer Journey Map | Module 2.5</p>
+        {locked && <LockedBanner variant={locked}/>}
+      </div>
+
+      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-6">
+        {/* Left: Controls */}
+        <div className="lg:w-64 space-y-4">
+          {/* Variant Tabs */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="text-xs text-gray-400 uppercase tracking-wider mb-3">Вариант</div>
+            <div className="space-y-2">
+              {Object.entries(VARIANTS).map(([k, v]) => (
+                <button key={k}
+                  onClick={() => { setActiveVariant(k); setActiveScreen("landing"); }}
+                  className={`w-full text-left px-4 py-3 rounded-xl transition font-medium text-sm flex items-center gap-2
+                    ${activeVariant === k ? `${v.bg} text-white shadow-md` : `bg-gray-50 text-gray-700 hover:bg-gray-100`}`}>
+                  <span className="text-lg">{v.emoji}</span>
+                  <span>{k}: {v.name}</span>
+                  {locked === k && <span className="ml-auto">✅</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Screen Nav */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="text-xs text-gray-400 uppercase tracking-wider mb-3">Экран</div>
+            <div className="space-y-1">
+              {SCREENS.map(s => (
+                <button key={s}
+                  onClick={() => setActiveScreen(s)}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition text-sm flex items-center gap-2
+                    ${activeScreen === s ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <span>{SCREEN_ICONS[s]}</span>
+                  <span>{SCREEN_NAMES[s]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tools */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm space-y-2">
+            <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Инструменты</div>
+            <button onClick={() => setShowCJM(!showCJM)}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition
+                ${showCJM ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}>
+              📊 CJM Overlay {showCJM ? 'ON' : 'OFF'}
+            </button>
+            <button onClick={() => setShowCompare(true)}
+              className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 transition">
+              ⚖️ Сравнить
+            </button>
+            <button onClick={() => setShowBuilder(true)}
+              className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 transition">
+              🔧 Конфигуратор
+            </button>
+            <button onClick={() => setShowScoring(true)}
+              className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 transition">
+              🏆 Оценить
+            </button>
+          </div>
+        </div>
+
+        {/* Center: Phone */}
+        <div className="flex-1 flex justify-center">
+          <div className="phone-frame bg-white">
+            <CJMBadge screen={activeScreen} show={showCJM}/>
+            <div className="fade-in h-full" key={`${activeVariant}-${activeScreen}`}>
+              <ScreenComp v={screenData} d={currentVariantData}/>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Info */}
+        <div className="lg:w-72 space-y-4">
+          {/* Variant Info */}
+          <div className={`rounded-2xl p-4 shadow-sm ${currentVariantData.bgl} border ${currentVariantData.bdr}`}>
+            <div className="text-2xl mb-2">{currentVariantData.emoji}</div>
+            <h3 className={`font-bold ${currentVariantData.txt}`}>Вариант {activeVariant}: {currentVariantData.name}</h3>
+            <div className="mt-3 space-y-2 text-sm">
+              <div><span className="font-medium text-gray-600">Aha:</span> <span className="text-gray-800">{currentVariantData.aha.title}</span></div>
+              <div><span className="font-medium text-gray-600">Paywall:</span> <span className="text-gray-800">{currentVariantData.pay.when}</span></div>
+              <div><span className="font-medium text-gray-600">Loop:</span> <span className="text-gray-800">{currentVariantData.dash.hook}</span></div>
+            </div>
+          </div>
+
+          {/* CJM Info */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="text-xs text-gray-400 uppercase tracking-wider mb-2">CJM Stage</div>
+            <div className="text-sm">
+              <div className="font-semibold text-gray-800">{CJM_META[activeScreen].stage}</div>
+              <div className={`text-xs font-medium ${currentVariantData.txt} mt-1`}>AARRR: {CJM_META[activeScreen].aarrr}</div>
+              <div className="text-xs text-gray-500 mt-2 italic">{CJM_META[activeScreen].q}</div>
+            </div>
+          </div>
+
+          {/* Hypotheses */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="text-xs text-gray-400 uppercase tracking-wider mb-2">Гипотеза варианта</div>
+            <div className="text-sm text-gray-700">
+              {activeVariant === "A" && "CBT-профиль = главный конверсионный триггер. Paywall сразу после wow-момента."}
+              {activeVariant === "B" && "Быстрые видимые результаты важнее глубокого подхода. 7 дней = привычка + proof."}
+              {activeVariant === "C" && "AI-персонализация создаёт уникальный moat. Proof of value перед paywall."}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
+      {showCompare && <CompareTable onClose={() => setShowCompare(false)}/>}
+      {showBuilder && <Builder config={builderConfig} setConfig={setBuilderConfig} onClose={() => setShowBuilder(false)}/>}
+      {showScoring && <Scoring onClose={() => setShowScoring(false)} onLock={setLocked}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
