@@ -7,7 +7,7 @@ import { useUserStore } from '@/entities/user/store';
 vi.mock('@/shared/api/client', () => ({
   apiClient: {
     post: vi.fn(),
-    get: vi.fn(),
+    get: vi.fn().mockResolvedValue({ data: { patterns: [], risk_today: null } }),
     interceptors: {
       request: { use: vi.fn() },
       response: { use: vi.fn() },
@@ -91,7 +91,7 @@ describe('App', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText('Dashboard')).toBeDefined();
+      expect(screen.getByText('НутриМайнд')).toBeDefined();
     });
   });
 
