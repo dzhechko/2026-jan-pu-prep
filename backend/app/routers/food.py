@@ -7,14 +7,13 @@ from app.schemas.food import (
     FoodHistoryResponse,
     FoodLogRequest,
     FoodLogResponse,
-    FoodItem,
-    FoodHistoryEntry,
 )
+from app.services import food_service
 
 router = APIRouter(prefix="/api/food", tags=["food"])
 
 
-@router.post("/log", response_model=FoodLogResponse)
+@router.post("/log", response_model=FoodLogResponse, status_code=201)
 async def log_food(
     body: FoodLogRequest,
     db: DbSession,
@@ -25,18 +24,13 @@ async def log_food(
     The text is parsed by the AI pipeline into structured food items
     with estimated calorie counts.
     """
-    # TODO: Call food_service.log_food() which will:
-    #   1. Parse raw_text via AI food_parser
-    #   2. Create FoodEntry record
-    #   3. Enqueue pattern detection job
-    import uuid
-
-    return FoodLogResponse(
-        entry_id=uuid.uuid4(),
-        parsed_items=[
-            FoodItem(name="placeholder", calories=0, category="unknown")
-        ],
-        total_calories=0,
+    return await food_service.log_food(
+        db=db,
+        user_id=current_user["user_id"],
+        raw_text=body.raw_text,
+        mood=body.mood,
+        context=body.context,
+        logged_at=body.logged_at,
     )
 
 
@@ -48,5 +42,9 @@ async def get_food_history(
     offset: int = Query(default=0, ge=0),
 ) -> FoodHistoryResponse:
     """Return paginated food log history for the current user."""
-    # TODO: Call food_service.get_food_history()
-    return FoodHistoryResponse(entries=[], total=0)
+    return await food_service.get_food_history(
+        db=db,
+        user_id=current_user["user_id"],
+        limit=limit,
+        offset=offset,
+    )
