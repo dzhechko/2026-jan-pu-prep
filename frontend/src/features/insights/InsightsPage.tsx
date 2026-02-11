@@ -290,6 +290,13 @@ const InsightsPage: React.FC = () => {
     <div className="min-h-screen bg-tg-bg px-4 pb-8 pt-6">
       {/* Header */}
       <div className="mb-6">
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="mb-2 text-sm font-medium text-tg-link"
+        >
+          &larr; Назад
+        </button>
         <h1 className="text-2xl font-bold text-tg-text">Инсайты</h1>
         <p className="mt-1 text-sm text-tg-hint">
           Ежедневный анализ ваших пищевых привычек

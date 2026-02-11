@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, Card, Spinner } from '@/shared/ui';
 import { apiClient } from '@/shared/api/client';
 
@@ -25,17 +26,13 @@ interface ContextOption {
 interface ParsedFoodItem {
   name: string;
   calories: number;
-  color: ColorCategory;
+  category: ColorCategory;
 }
 
 interface FoodLogResponse {
-  id: string;
-  raw_text: string;
-  items: ParsedFoodItem[];
+  entry_id: string;
+  parsed_items: ParsedFoodItem[];
   total_calories: number;
-  mood: Mood | null;
-  context: Context | null;
-  created_at: string;
 }
 
 interface HistoryEntry {
@@ -129,6 +126,8 @@ function formatTime(isoString: string): string {
 // ---------------------------------------------------------------------------
 
 const FoodLogPage: React.FC = () => {
+  const navigate = useNavigate();
+
   // Form state
   const [rawText, setRawText] = useState('');
   const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
@@ -284,6 +283,13 @@ const FoodLogPage: React.FC = () => {
     <div className="min-h-screen bg-tg-bg px-4 pb-8 pt-6">
       {/* Header */}
       <div className="mb-6">
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="mb-2 text-sm font-medium text-tg-link"
+        >
+          &larr; Назад
+        </button>
         <h1 className="text-2xl font-bold text-tg-text">Запись еды</h1>
         <p className="mt-1 text-sm text-tg-hint">
           Опишите что вы съели — мы посчитаем калории
@@ -432,14 +438,14 @@ const FoodLogPage: React.FC = () => {
             Результат
           </p>
           <div className="flex flex-col gap-2">
-            {parseResult.items.map((item, index) => (
+            {parseResult.parsed_items.map((item, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between rounded-lg bg-tg-secondary-bg px-3 py-2"
               >
                 <div className="flex items-center gap-2">
                   <span
-                    className={`inline-block h-2.5 w-2.5 rounded-full ${COLOR_DOT_CLASSES[item.color]}`}
+                    className={`inline-block h-2.5 w-2.5 rounded-full ${COLOR_DOT_CLASSES[item.category]}`}
                   />
                   <span className="text-sm text-tg-text">{item.name}</span>
                 </div>
