@@ -70,6 +70,18 @@ const ProfilePage: React.FC = () => {
   const [cancelling, setCancelling] = useState(false);
   const [cancelResult, setCancelResult] = useState<string | null>(null);
 
+  // Data export
+  const [exporting, setExporting] = useState(false);
+  const [exportSuccess, setExportSuccess] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  // Account deletion
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteInput, setDeleteInput] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   // -------------------------------------------------------------------------
   // Fetch subscription
   // -------------------------------------------------------------------------
@@ -128,6 +140,69 @@ const ProfilePage: React.FC = () => {
       setCancelling(false);
     }
   }, [subscription]);
+
+  // -------------------------------------------------------------------------
+  // Data export handler
+  // -------------------------------------------------------------------------
+
+  const handleExportData = useCallback(async () => {
+    triggerHapticImpact('medium');
+    setExporting(true);
+    setExportError(null);
+    setExportSuccess(false);
+
+    try {
+      const response = await apiClient.post('/privacy/export');
+      const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'nutrimind-data-export.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      setExportSuccess(true);
+      triggerHapticNotification('success');
+    } catch (err: unknown) {
+      const message =
+        (err as { message?: string })?.message ||
+        'Не удалось экспортировать данные. Попробуйте ещё раз.';
+      setExportError(message);
+      triggerHapticNotification('error');
+    } finally {
+      setExporting(false);
+    }
+  }, []);
+
+  // -------------------------------------------------------------------------
+  // Account deletion handler
+  // -------------------------------------------------------------------------
+
+  const handleDeleteAccount = useCallback(async () => {
+    triggerHapticNotification('warning');
+    setDeleting(true);
+    setDeleteError(null);
+
+    try {
+      await apiClient.post('/privacy/delete', { confirmation: deleteInput });
+      setDeleteSuccess(true);
+      setShowDeleteConfirm(false);
+      triggerHapticNotification('success');
+      useUserStore.getState().clearAuth();
+
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+    } catch (err: unknown) {
+      const message =
+        (err as { message?: string })?.message ||
+        'Не удалось удалить аккаунт. Попробуйте ещё раз.';
+      setDeleteError(message);
+      setShowDeleteConfirm(false);
+      triggerHapticNotification('error');
+    } finally {
+      setDeleting(false);
+    }
+  }, [deleteInput, navigate]);
 
   // -------------------------------------------------------------------------
   // Navigation
@@ -349,13 +424,177 @@ const ProfilePage: React.FC = () => {
   };
 
   // -------------------------------------------------------------------------
+  // Render: Data export section
+  // -------------------------------------------------------------------------
+
+  const renderDataExportSection = () => {
+    return (
+      <div className="rounded-2xl bg-tg-secondary-bg p-6">
+        <h3 className="mb-2 text-base font-semibold text-tg-text">
+          Экспорт данных
+        </h3>
+        <p className="mb-4 text-sm text-tg-hint">
+          Скачайте все ваши данные в формате JSON (152-ФЗ)
+        </p>
+        {exportSuccess && (
+          <p className="mb-3 text-sm text-green-600">Данные скачаны</p>
+        )}
+        {exportError && (
+          <p className="mb-3 text-sm text-red-500">{exportError}</p>
+        )}
+        <button
+          type="button"
+          disabled={exporting}
+          onClick={handleExportData}
+          className="
+            rounded-xl bg-tg-button px-4 py-2
+            text-sm font-medium text-tg-button-text
+            transition-all duration-150
+            hover:opacity-90 active:opacity-80
+            disabled:cursor-not-allowed disabled:opacity-50
+          "
+        >
+          {exporting ? (
+            <span className="inline-flex items-center justify-center gap-2">
+              <Spinner size="sm" />
+            </span>
+          ) : (
+            'Скачать данные'
+          )}
+        </button>
+      </div>
+    );
+  };
+
+  // -------------------------------------------------------------------------
+  // Render: Account deletion section
+  // -------------------------------------------------------------------------
+
+  const renderDeleteAccountSection = () => {
+    if (deleteSuccess) {
+      return (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6">
+          <p className="text-sm font-medium text-tg-text">Аккаунт удалён</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6">
+        <h3 className="mb-2 text-base font-semibold text-red-600">
+          Удаление аккаунта
+        </h3>
+        <p className="mb-4 text-sm text-tg-hint">
+          Все данные будут удалены безвозвратно. Это действие нельзя отменить.
+        </p>
+        {deleteError && (
+          <p className="mb-3 text-sm text-red-500">{deleteError}</p>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            triggerHapticImpact('light');
+            setDeleteInput('');
+            setShowDeleteConfirm(true);
+          }}
+          className="
+            rounded-xl border border-red-500/30
+            bg-red-500/10 px-4 py-2
+            text-sm font-medium text-red-600
+            transition-all duration-150
+            hover:opacity-90 active:opacity-80
+          "
+        >
+          Удалить аккаунт
+        </button>
+      </div>
+    );
+  };
+
+  // -------------------------------------------------------------------------
+  // Render: Delete account confirmation dialog
+  // -------------------------------------------------------------------------
+
+  const renderDeleteConfirmDialog = () => {
+    if (!showDeleteConfirm) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6">
+        <div className="w-full max-w-sm rounded-2xl bg-tg-bg p-6">
+          <h3 className="mb-2 text-lg font-semibold text-tg-text">
+            Удаление аккаунта
+          </h3>
+          <p className="mb-4 text-sm text-tg-hint">
+            Для подтверждения введите УДАЛИТЬ
+          </p>
+          <input
+            type="text"
+            value={deleteInput}
+            onChange={(e) => setDeleteInput(e.target.value)}
+            className="
+              mb-4 w-full rounded-xl border border-tg-hint/30
+              bg-tg-secondary-bg px-4 py-2.5
+              text-sm text-tg-text
+              outline-none
+              focus:border-tg-button
+            "
+            placeholder="УДАЛИТЬ"
+          />
+          <div className="flex gap-3">
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => {
+                triggerHapticImpact('light');
+                setShowDeleteConfirm(false);
+              }}
+              className="
+                flex-1 rounded-xl border border-tg-hint/20
+                bg-tg-secondary-bg py-2.5
+                text-sm font-medium text-tg-text
+                transition-all duration-150
+                hover:opacity-90 active:opacity-80
+                disabled:cursor-not-allowed disabled:opacity-50
+              "
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              disabled={deleting || deleteInput !== 'УДАЛИТЬ'}
+              onClick={handleDeleteAccount}
+              className="
+                flex-1 rounded-xl
+                bg-red-500 py-2.5
+                text-sm font-medium text-white
+                transition-all duration-150
+                hover:opacity-90 active:opacity-80
+                disabled:cursor-not-allowed disabled:opacity-50
+              "
+            >
+              {deleting ? (
+                <span className="inline-flex items-center justify-center gap-2">
+                  <Spinner size="sm" />
+                </span>
+              ) : (
+                'Удалить'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
 
   return (
     <div className="min-h-screen bg-tg-bg px-4 pb-8 pt-6">
-      {/* Confirmation dialog overlay */}
+      {/* Confirmation dialog overlays */}
       {renderConfirmDialog()}
+      {renderDeleteConfirmDialog()}
 
       {/* Header */}
       <div className="mb-6">
@@ -383,6 +622,17 @@ const ProfilePage: React.FC = () => {
       <div className="mb-6">
         <h2 className="mb-3 text-lg font-semibold text-tg-text">Подписка</h2>
         {renderSubscriptionSection()}
+      </div>
+
+      {/* Data export section */}
+      <div className="mb-6">
+        <h2 className="mb-3 text-lg font-semibold text-tg-text">Мои данные</h2>
+        {renderDataExportSection()}
+      </div>
+
+      {/* Account deletion section */}
+      <div className="mb-6">
+        {renderDeleteAccountSection()}
       </div>
 
       {/* Back button */}
