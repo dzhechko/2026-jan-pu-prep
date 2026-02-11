@@ -81,7 +81,7 @@ const PaywallPage: React.FC = () => {
     setError(null);
 
     try {
-      await apiClient.post<SubscribeResponse>('/payments/subscribe');
+      await apiClient.post<SubscribeResponse>('/payments/subscribe', {});
       setSuccess(true);
       triggerHapticNotification('success');
     } catch (err: unknown) {
