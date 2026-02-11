@@ -1,22 +1,23 @@
 """Food logging schemas."""
 
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 
 class FoodLogRequest(BaseModel):
-    raw_text: str = Field(..., min_length=1, max_length=2000)
-    mood: str | None = None
-    context: str | None = None
+    raw_text: str = Field(..., min_length=1, max_length=500)
+    mood: Literal["great", "ok", "meh", "bad", "awful"] | None = None
+    context: Literal["home", "work", "street", "restaurant"] | None = None
     logged_at: datetime | None = None
 
 
 class FoodItem(BaseModel):
     name: str
     calories: int
-    category: str
+    category: Literal["green", "yellow", "orange"] = "yellow"
 
 
 class FoodLogResponse(BaseModel):
