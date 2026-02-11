@@ -517,6 +517,23 @@ const DashboardPage: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Invite section */}
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={() => handleNavigate('/invite')}
+              className="w-full rounded-2xl bg-tg-secondary-bg p-4 text-left transition-all duration-150 hover:opacity-90 active:opacity-80"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{'\u{1F465}'}</span>
+                <div>
+                  <h3 className="text-sm font-semibold text-tg-text">Пригласить друга</h3>
+                  <p className="text-xs text-tg-hint">Получите 7 дней Premium бесплатно</p>
+                </div>
+              </div>
+            </button>
+          </div>
         </>
       )}
     </div>
