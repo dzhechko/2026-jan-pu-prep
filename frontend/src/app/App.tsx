@@ -4,6 +4,8 @@ import { router } from './router';
 import { Providers } from './providers';
 import { useTelegram } from '@/shared/hooks/useTelegram';
 import { useAuth } from '@/shared/hooks/useAuth';
+import { apiClient } from '@/shared/api/client';
+import { useUserStore } from '@/entities/user/store';
 import { Spinner } from '@/shared/ui';
 
 export const App: React.FC = () => {
@@ -38,6 +40,21 @@ export const App: React.FC = () => {
       if (!initData) {
         // No initData available — either not in Telegram or dev mode
         if (import.meta.env.DEV) {
+          try {
+            const response = await apiClient.post<{
+              token: string;
+              refresh_token: string;
+              user: { id: string; first_name: string; onboarding_complete: boolean; subscription_status: string };
+            }>('/auth/dev');
+            const { user: userData, token: jwt, refresh_token } = response.data;
+            useUserStore.getState().setAuth({
+              user: userData,
+              token: jwt,
+              refreshToken: refresh_token,
+            });
+          } catch {
+            // Dev auth failed — continue without auth (backend may be down)
+          }
           setAuthLoading(false);
         }
         return;
