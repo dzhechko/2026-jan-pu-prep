@@ -44,7 +44,7 @@ interface HistoryEntry {
   total_calories: number;
   mood: Mood | null;
   context: Context | null;
-  created_at: string;
+  logged_at: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -154,10 +154,10 @@ const FoodLogPage: React.FC = () => {
   const fetchHistory = useCallback(async () => {
     setHistoryLoading(true);
     try {
-      const response = await apiClient.get<HistoryEntry[]>('/food/history', {
+      const response = await apiClient.get<{ entries: HistoryEntry[]; total: number }>('/food/history', {
         params: { limit: 10 },
       });
-      setHistory(response.data);
+      setHistory(response.data.entries);
     } catch {
       // Silently fail — history is non-critical
     } finally {
@@ -483,7 +483,7 @@ const FoodLogPage: React.FC = () => {
                     {entry.raw_text}
                   </p>
                   <p className="mt-1 text-xs text-tg-hint">
-                    {formatTime(entry.created_at)}
+                    {formatTime(entry.logged_at)}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
