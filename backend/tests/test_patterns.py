@@ -303,14 +303,33 @@ class TestGetPatternsEndpoint:
         pattern.type = "mood"
         pattern.description_ru = "Тестовый паттерн"
         pattern.confidence = 0.8
+        pattern.active = True
+        pattern.user_id = FAKE_USER_ID
         pattern.discovered_at = datetime.now(timezone.utc)
 
         session = AsyncMock()
-        result_mock = MagicMock()
-        scalars_mock = MagicMock()
-        scalars_mock.all.return_value = [pattern]
-        result_mock.scalars.return_value = scalars_mock
-        session.execute = AsyncMock(return_value=result_mock)
+
+        # 1st call: get_user_patterns patterns query -> [pattern]
+        patterns_result_1 = MagicMock()
+        patterns_scalars_1 = MagicMock()
+        patterns_scalars_1.all.return_value = [pattern]
+        patterns_result_1.scalars.return_value = patterns_scalars_1
+
+        # 2nd call: calculate_risk patterns query -> [pattern]
+        patterns_result_2 = MagicMock()
+        patterns_scalars_2 = MagicMock()
+        patterns_scalars_2.all.return_value = [pattern]
+        patterns_result_2.scalars.return_value = patterns_scalars_2
+
+        # 3rd call: calculate_risk entries query -> []
+        entries_result = MagicMock()
+        entries_scalars = MagicMock()
+        entries_scalars.all.return_value = []
+        entries_result.scalars.return_value = entries_scalars
+
+        session.execute = AsyncMock(
+            side_effect=[patterns_result_1, patterns_result_2, entries_result]
+        )
         _override_dependencies(app, session)
 
         try:

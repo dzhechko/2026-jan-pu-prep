@@ -13,6 +13,7 @@ from app.models.ai_profile import AIProfile
 from app.models.food_entry import FoodEntry
 from app.models.pattern import Pattern
 from app.schemas.pattern import PatternData, PatternsResponse
+from app.services.risk_service import calculate_risk
 
 logger = structlog.get_logger()
 
@@ -512,6 +513,9 @@ async def get_user_patterns(
     result = await db.execute(stmt)
     patterns = result.scalars().all()
 
+    # Calculate today's risk score
+    risk_today = await calculate_risk(db, user_id)
+
     return PatternsResponse(
         patterns=[
             PatternData(
@@ -523,7 +527,7 @@ async def get_user_patterns(
             )
             for p in patterns
         ],
-        risk_today=None,  # TODO: integrate risk_service.calculate_risk()
+        risk_today=risk_today,
     )
 
 
