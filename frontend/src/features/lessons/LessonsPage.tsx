@@ -146,7 +146,7 @@ const LessonsPage: React.FC = () => {
         throw listResponse.reason;
       }
 
-      if (recommendedResponse.status === 'fulfilled') {
+      if (recommendedResponse.status === 'fulfilled' && recommendedResponse.value.data) {
         setRecommendedId(recommendedResponse.value.data.lesson.id);
       }
     } catch (err: unknown) {
