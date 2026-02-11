@@ -39,6 +39,12 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         decode_responses=True,
     )
 
+    # Seed CBT lessons if the table is empty (idempotent)
+    async with application.state.db_session_factory() as session:
+        from app.services.lesson_service import seed_lessons
+        await seed_lessons(session)
+        await session.commit()
+
     logger.info("startup_complete", env=settings.APP_ENV, version=settings.APP_VERSION)
 
     yield
