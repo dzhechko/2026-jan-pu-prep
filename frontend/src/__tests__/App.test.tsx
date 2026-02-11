@@ -7,7 +7,12 @@ import { useUserStore } from '@/entities/user/store';
 vi.mock('@/shared/api/client', () => ({
   apiClient: {
     post: vi.fn(),
-    get: vi.fn().mockResolvedValue({ data: { patterns: [], risk_today: null } }),
+    get: vi.fn().mockImplementation((url: string) => {
+      if (url.includes('insights')) {
+        return Promise.resolve({ data: { insight: { id: '1', title: 'Test', body: 'Test body', action: null, type: 'general', created_at: new Date().toISOString() }, is_locked: false } });
+      }
+      return Promise.resolve({ data: { patterns: [], risk_today: null } });
+    }),
     interceptors: {
       request: { use: vi.fn() },
       response: { use: vi.fn() },
