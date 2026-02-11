@@ -113,6 +113,7 @@ from app.routers import (  # noqa: E402
     lessons,
     payments,
     invite,
+    privacy,
 )
 
 app.include_router(auth.router)
@@ -123,6 +124,7 @@ app.include_router(patterns.router)
 app.include_router(lessons.router)
 app.include_router(payments.router)
 app.include_router(invite.router)
+app.include_router(privacy.router)
 
 
 # ---------------------------------------------------------------------------
