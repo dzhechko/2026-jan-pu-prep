@@ -94,3 +94,35 @@ async def cancel_subscription(
 
     logger.info("subscription_cancelled", user_id=str(user_id))
     return True
+
+
+async def get_subscription_status(db: AsyncSession, user_id: UUID) -> dict:
+    """Return current subscription info for the user.
+
+    Finds the most recent subscription (active or cancelled) and returns
+    a dict suitable for building a SubscriptionResponse.  If no
+    subscription exists, returns ``status="none"``.
+    """
+    stmt = (
+        select(Subscription)
+        .where(Subscription.user_id == user_id)
+        .order_by(Subscription.started_at.desc())
+        .limit(1)
+    )
+    result = await db.execute(stmt)
+    subscription = result.scalar_one_or_none()
+
+    if subscription is None:
+        return {
+            "status": "none",
+            "plan": None,
+            "expires_at": None,
+            "cancelled_at": None,
+        }
+
+    return {
+        "status": subscription.status,
+        "plan": subscription.plan,
+        "expires_at": subscription.expires_at,
+        "cancelled_at": subscription.cancelled_at,
+    }
