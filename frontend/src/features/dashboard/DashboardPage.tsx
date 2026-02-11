@@ -302,8 +302,8 @@ const DashboardPage: React.FC = () => {
 
     try {
       const response = await apiClient.get<PatternsResponse>('/patterns');
-      setPatterns(response.data.patterns);
-      setRiskToday(response.data.risk_today);
+      setPatterns(response.data.patterns ?? []);
+      setRiskToday(response.data.risk_today ?? null);
     } catch (err: unknown) {
       const message =
         (err as { message?: string })?.message ||
