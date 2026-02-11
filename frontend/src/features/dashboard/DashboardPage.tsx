@@ -10,6 +10,7 @@ import { useUserStore } from '@/entities/user/store';
 
 type PatternType = 'time' | 'mood' | 'context' | 'sequence' | 'skip';
 type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
+type InsightType = 'pattern' | 'progress' | 'cbt' | 'risk' | 'general';
 
 interface PatternData {
   id: string;
@@ -36,6 +37,20 @@ interface FeedbackResponse {
   active: boolean;
 }
 
+interface InsightData {
+  id: string;
+  title: string;
+  body: string;
+  action: string | null;
+  type: InsightType;
+  created_at: string;
+}
+
+interface TodayInsightResponse {
+  insight: InsightData;
+  is_locked: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -46,6 +61,14 @@ const PATTERN_TYPE_ICONS: Record<PatternType, string> = {
   context: '\u{1F4CD}',
   skip: '\u{23ED}\uFE0F',
   sequence: '\u{1F504}',
+};
+
+const INSIGHT_TYPE_ICONS: Record<InsightType, string> = {
+  pattern: '\u{1F50D}',
+  progress: '\u{1F4C8}',
+  cbt: '\u{1F9E0}',
+  risk: '\u{26A0}\uFE0F',
+  general: '\u{1F4A1}',
 };
 
 const RISK_LEVEL_CLASSES: Record<RiskLevel, string> = {
@@ -78,6 +101,15 @@ function triggerHaptic(style: 'light' | 'medium' | 'heavy'): void {
   } catch {
     // Haptic feedback is best-effort
   }
+}
+
+/**
+ * Returns the first line (or up to ~80 chars) from the insight body.
+ */
+function getInsightPreviewText(body: string): string {
+  const firstLine = body.split('\n')[0];
+  if (firstLine.length <= 80) return firstLine;
+  return firstLine.slice(0, 77) + '...';
 }
 
 // ---------------------------------------------------------------------------
@@ -192,6 +224,51 @@ const RiskCard: React.FC<RiskCardProps> = ({ risk }) => {
   );
 };
 
+interface InsightPreviewCardProps {
+  insight: InsightData;
+  isLocked: boolean;
+  onNavigate: (path: string) => void;
+}
+
+const InsightPreviewCard: React.FC<InsightPreviewCardProps> = ({
+  insight,
+  isLocked,
+  onNavigate,
+}) => {
+  return (
+    <button
+      type="button"
+      onClick={() => onNavigate('/insights')}
+      className="
+        w-full rounded-2xl bg-tg-secondary-bg p-4
+        text-left transition-all duration-150
+        hover:opacity-90 active:opacity-80
+      "
+    >
+      <div className="flex items-start gap-3">
+        <span className="text-2xl leading-none">
+          {isLocked
+            ? '\u{1F512}'
+            : INSIGHT_TYPE_ICONS[insight.type] || '\u{1F4A1}'}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-semibold text-tg-text">
+            {insight.title}
+          </h3>
+          {!isLocked && (
+            <p className="mt-1 text-xs text-tg-hint">
+              {getInsightPreviewText(insight.body)}
+            </p>
+          )}
+          <p className="mt-2 text-xs font-medium text-tg-button">
+            {'Подробнее \u2192'}
+          </p>
+        </div>
+      </div>
+    </button>
+  );
+};
+
 // ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
@@ -200,9 +277,13 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useUserStore((state) => state.user);
 
-  // Data state
+  // Patterns data state
   const [patterns, setPatterns] = useState<PatternData[]>([]);
   const [riskToday, setRiskToday] = useState<RiskScore | null>(null);
+
+  // Insight preview data state
+  const [insightPreview, setInsightPreview] = useState<InsightData | null>(null);
+  const [insightLocked, setInsightLocked] = useState(false);
 
   // Loading & error
   const [loading, setLoading] = useState(true);
@@ -233,9 +314,24 @@ const DashboardPage: React.FC = () => {
     }
   }, []);
 
+  // -------------------------------------------------------------------------
+  // Fetch today's insight for preview
+  // -------------------------------------------------------------------------
+
+  const fetchInsightPreview = useCallback(async () => {
+    try {
+      const response = await apiClient.get<TodayInsightResponse>('/insights/today');
+      setInsightPreview(response.data.insight);
+      setInsightLocked(response.data.is_locked);
+    } catch {
+      // Insight preview is best-effort; don't block dashboard on failure
+    }
+  }, []);
+
   useEffect(() => {
     fetchPatterns();
-  }, [fetchPatterns]);
+    fetchInsightPreview();
+  }, [fetchPatterns, fetchInsightPreview]);
 
   // -------------------------------------------------------------------------
   // Dispute handler
@@ -374,6 +470,20 @@ const DashboardPage: React.FC = () => {
       {/* Content (loaded successfully) */}
       {!loading && !error && (
         <>
+          {/* Insight preview card (above patterns) */}
+          {insightPreview && (
+            <div className="mb-6">
+              <h2 className="mb-3 text-lg font-semibold text-tg-text">
+                Инсайт дня
+              </h2>
+              <InsightPreviewCard
+                insight={insightPreview}
+                isLocked={insightLocked}
+                onNavigate={handleNavigate}
+              />
+            </div>
+          )}
+
           {/* Risk score card */}
           {riskToday && (
             <div className="mb-6">

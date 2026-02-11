@@ -1,6 +1,7 @@
 """Insight schemas."""
 
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -20,3 +21,11 @@ class InsightData(BaseModel):
 class InsightResponse(BaseModel):
     insight: InsightData
     is_locked: bool
+
+
+class InsightFeedback(BaseModel):
+    rating: Literal["positive", "negative"]
+
+
+class InsightFeedbackResponse(BaseModel):
+    status: str
