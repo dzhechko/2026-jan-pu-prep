@@ -25,3 +25,14 @@ class RiskScore(BaseModel):
 class PatternsResponse(BaseModel):
     patterns: list[PatternData]
     risk_today: RiskScore | None = None
+
+
+class PatternFeedback(BaseModel):
+    """User disputes a pattern."""
+    pass  # No body needed, just the path param
+
+
+class PatternFeedbackResponse(BaseModel):
+    status: str
+    new_confidence: float
+    active: bool
