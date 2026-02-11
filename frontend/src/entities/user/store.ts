@@ -2,16 +2,10 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export interface User {
-  id: number;
-  telegramId: number;
-  firstName: string;
-  lastName?: string;
-  username?: string;
-  photoUrl?: string;
-  languageCode?: string;
-  isPremium?: boolean;
-  onboardingCompleted?: boolean;
-  subscriptionTier?: 'free' | 'premium';
+  id: string;
+  first_name: string;
+  onboarding_complete: boolean;
+  subscription_status: string;
 }
 
 interface AuthState {

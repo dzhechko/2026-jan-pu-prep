@@ -4,13 +4,21 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db
+from app.middleware.rate_limit import RateLimiter
 from app.schemas.auth import AuthResponse, TelegramAuthRequest
 from app.services.auth_service import authenticate_telegram_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+# 10 requests per minute per client IP
+_telegram_rate_limit = RateLimiter(max_requests=10, window_seconds=60)
 
-@router.post("/telegram", response_model=AuthResponse)
+
+@router.post(
+    "/telegram",
+    response_model=AuthResponse,
+    dependencies=[Depends(_telegram_rate_limit)],
+)
 async def telegram_auth(
     body: TelegramAuthRequest,
     db: AsyncSession = Depends(get_db),

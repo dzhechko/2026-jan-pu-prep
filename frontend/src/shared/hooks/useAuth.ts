@@ -3,9 +3,9 @@ import { apiClient } from '@/shared/api/client';
 import { useUserStore, User } from '@/entities/user/store';
 
 interface LoginResponse {
-  user: User;
   token: string;
-  refreshToken?: string;
+  refresh_token: string;
+  user: User;
 }
 
 interface UseAuthReturn {
@@ -27,15 +27,15 @@ export function useAuth(): UseAuthReturn {
   const login = useCallback(
     async (initData: string): Promise<void> => {
       const response = await apiClient.post<LoginResponse>('/auth/telegram', {
-        initData,
+        init_data: initData,
       });
 
-      const { user: userData, token: jwt, refreshToken } = response.data;
+      const { user: userData, token: jwt, refresh_token } = response.data;
 
       setAuth({
         user: userData,
         token: jwt,
-        refreshToken,
+        refreshToken: refresh_token,
       });
     },
     [setAuth],

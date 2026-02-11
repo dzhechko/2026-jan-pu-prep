@@ -1,13 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { App } from '@/app/App';
+import { useUserStore } from '@/entities/user/store';
+
+// Mock the API client to prevent real network requests
+vi.mock('@/shared/api/client', () => ({
+  apiClient: {
+    post: vi.fn(),
+    get: vi.fn(),
+    interceptors: {
+      request: { use: vi.fn() },
+      response: { use: vi.fn() },
+    },
+  },
+}));
 
 // Mock the Telegram WebApp global
 beforeEach(() => {
-  // Provide a mock Telegram WebApp object
+  // Clear auth state between tests
+  useUserStore.getState().clearAuth();
+
   window.Telegram = {
     WebApp: {
-      initData: 'mock_init_data',
+      initData: '',
       initDataUnsafe: {
         user: {
           id: 123456789,
@@ -75,7 +90,6 @@ describe('App', () => {
   it('renders without crashing', async () => {
     render(<App />);
 
-    // Wait for the lazy-loaded DashboardPage to appear
     await waitFor(() => {
       expect(screen.getByText('Dashboard')).toBeDefined();
     });
