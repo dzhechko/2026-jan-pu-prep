@@ -1,0 +1,80 @@
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend/dist:/var/www/app:ro
+    depends_on:
+      - api
+      - bot
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    env_file: .env
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  bot:
+    build: ./bot
+    env_file: .env
+    expose:
+      - "8080"
+    depends_on:
+      - api
+      - redis
+    restart: unless-stopped
+
+  worker:
+    build: ./backend
+    command: rq worker ai_heavy ai_light --url ${REDIS_URL:-redis://redis:6379/0}
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${DB_NAME:-nutrimind}
+      POSTGRES_USER: ${DB_USER:-nutrimind}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-devpassword}
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-nutrimind}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redisdata:/data
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:

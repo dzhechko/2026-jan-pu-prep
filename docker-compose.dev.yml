@@ -1,0 +1,66 @@
+services:
+  api:
+    build: ./backend
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+    volumes:
+      - ./backend/app:/code/app
+      - ./backend/tests:/code/tests
+      - ./backend/pyproject.toml:/code/pyproject.toml
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/code
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: ./backend
+    command: rq worker ai_heavy ai_light --url ${REDIS_URL:-redis://redis:6379/0}
+    volumes:
+      - ./backend/app:/code/app
+    environment:
+      - PYTHONPATH=/code
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  bot:
+    build: ./bot
+    command: python bot.py --polling
+    volumes:
+      - ./bot:/code
+    env_file: .env
+    depends_on:
+      - api
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-nutrimind}
+      POSTGRES_USER: ${DB_USER:-nutrimind}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-devpassword}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-nutrimind}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
