@@ -31,7 +31,7 @@ const STORAGE_KEY = 'nutrimind-onboarding-answers';
 
 const QUESTIONS: Question[] = [
   {
-    id: 'eating_pattern',
+    id: 'eating_schedule',
     text: 'Как бы вы описали свой режим питания?',
     options: [
       { id: 'regular', label: 'Регулярное — 3 раза в день' },
@@ -41,7 +41,7 @@ const QUESTIONS: Question[] = [
     ],
   },
   {
-    id: 'main_challenge',
+    id: 'biggest_challenge',
     text: 'Какая ваша главная трудность?',
     options: [
       { id: 'overeating', label: 'Переедание' },

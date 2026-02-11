@@ -63,4 +63,8 @@ export const router = createHashRouter([
     path: '/profile',
     element: withSuspense(ProfilePage),
   },
+  {
+    path: '*',
+    element: withSuspense(DashboardPage),
+  },
 ]);

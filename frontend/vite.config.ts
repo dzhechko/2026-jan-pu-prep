@@ -13,9 +13,10 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    allowedHosts: ['.trycloudflare.com', '.app.github.dev'],
     proxy: {
       '/api': {
-        target: 'http://api:8000',
+        target: process.env.VITE_API_TARGET || 'http://api:8000',
         changeOrigin: true,
       },
     },
