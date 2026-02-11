@@ -11,8 +11,12 @@ vi.mock('@/shared/api/client', () => ({
       if (url.includes('insights')) {
         return Promise.resolve({ data: { insight: { id: '1', title: 'Test', body: 'Test body', action: null, type: 'general', created_at: new Date().toISOString() }, is_locked: false } });
       }
+      if (url.includes('payments')) {
+        return Promise.resolve({ data: { status: 'none', plan: null, expires_at: null, cancelled_at: null } });
+      }
       return Promise.resolve({ data: { patterns: [], risk_today: null } });
     }),
+    delete: vi.fn().mockResolvedValue({ data: { status: 'ok', message: 'Подписка отменена' } }),
     interceptors: {
       request: { use: vi.fn() },
       response: { use: vi.fn() },
