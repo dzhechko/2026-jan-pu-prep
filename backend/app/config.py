@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o"
 
+    # ── Scheduler ─────────────────────────────────────────
+    SCHEDULER_ENABLED: bool = True
+
     # ── JWT ──────────────────────────────────────────────────────
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours

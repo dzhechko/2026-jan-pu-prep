@@ -94,6 +94,17 @@ async def send_cancellation_confirmation(
     log.info("notification_sent", kind="cancellation", chat_id=chat_id)
 
 
+async def send_food_reminder(bot: Bot, chat_id: int) -> None:
+    """Daily reminder to log food if the user hasn't logged today."""
+    text = (
+        "\U0001f37d <b>Не забудьте записать приёмы пищи!</b>\n\n"
+        "Регулярное ведение дневника помогает выявить "
+        "паттерны питания."
+    )
+    await bot.send_message(chat_id=chat_id, text=text, parse_mode="HTML")
+    log.info("notification_sent", kind="food_reminder", chat_id=chat_id)
+
+
 async def send_invite_reward(bot: Bot, chat_id: int, days_premium: int) -> None:
     """Notify that the user earned premium days via referral."""
     text = (
@@ -129,6 +140,7 @@ _DISPATCH: dict[str, Any] = {
     "invite_reward": lambda bot, data: send_invite_reward(
         bot, data["chat_id"], data["days_premium"]
     ),
+    "food_reminder": lambda bot, data: send_food_reminder(bot, data["chat_id"]),
 }
 
 

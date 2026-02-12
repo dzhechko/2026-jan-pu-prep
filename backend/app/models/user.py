@@ -61,6 +61,9 @@ class User(Base):
         foreign_keys="Invite.inviter_id",
         lazy="selectin",
     )
+    chat_messages: Mapped[list["ChatMessage"]] = relationship(  # noqa: F821
+        back_populates="user", lazy="noload"
+    )
 
     def __repr__(self) -> str:
         return f"<User {self.telegram_id} ({self.first_name})>"

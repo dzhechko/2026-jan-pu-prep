@@ -11,6 +11,7 @@ const LessonDetailPage = lazy(() => import('@/features/lessons/LessonDetailPage'
 const PaywallPage = lazy(() => import('@/features/paywall/PaywallPage'));
 const InvitePage = lazy(() => import('@/features/invite/InvitePage'));
 const ProfilePage = lazy(() => import('@/features/profile/ProfilePage'));
+const CoachPage = lazy(() => import('@/features/coach/CoachPage'));
 
 const PageLoader: React.FC = () => (
   <div className="flex h-screen w-full items-center justify-center bg-tg-bg">
@@ -62,6 +63,10 @@ export const router = createHashRouter([
   {
     path: '/profile',
     element: withSuspense(ProfilePage),
+  },
+  {
+    path: '/coach',
+    element: withSuspense(CoachPage),
   },
   {
     path: '*',

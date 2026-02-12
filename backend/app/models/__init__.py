@@ -9,6 +9,7 @@ from app.models.insight import Insight
 from app.models.lesson import CBTLesson, UserLessonProgress
 from app.models.subscription import Subscription
 from app.models.invite import Invite
+from app.models.chat_message import ChatMessage
 
 __all__ = [
     "Base",
@@ -21,4 +22,5 @@ __all__ = [
     "UserLessonProgress",
     "Subscription",
     "Invite",
+    "ChatMessage",
 ]

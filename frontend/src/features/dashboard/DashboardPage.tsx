@@ -402,12 +402,12 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* Quick actions */}
-      <div className="mb-6 flex gap-2">
+      <div className="mb-6 grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => handleNavigate('/food-log')}
           className="
-            flex-1 rounded-xl bg-tg-button px-4 py-2
+            rounded-xl bg-tg-button px-4 py-2
             text-sm font-medium text-tg-button-text
             transition-all duration-150
             hover:opacity-90 active:opacity-80
@@ -419,7 +419,7 @@ const DashboardPage: React.FC = () => {
           type="button"
           onClick={() => handleNavigate('/lessons')}
           className="
-            flex-1 rounded-xl bg-tg-button px-4 py-2
+            rounded-xl bg-tg-button px-4 py-2
             text-sm font-medium text-tg-button-text
             transition-all duration-150
             hover:opacity-90 active:opacity-80
@@ -429,9 +429,21 @@ const DashboardPage: React.FC = () => {
         </button>
         <button
           type="button"
+          onClick={() => handleNavigate('/coach')}
+          className="
+            rounded-xl bg-tg-button px-4 py-2
+            text-sm font-medium text-tg-button-text
+            transition-all duration-150
+            hover:opacity-90 active:opacity-80
+          "
+        >
+          AI Коуч
+        </button>
+        <button
+          type="button"
           onClick={() => handleNavigate('/profile')}
           className="
-            flex-1 rounded-xl bg-tg-button px-4 py-2
+            rounded-xl bg-tg-button px-4 py-2
             text-sm font-medium text-tg-button-text
             transition-all duration-150
             hover:opacity-90 active:opacity-80

@@ -45,9 +45,24 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         await seed_lessons(session)
         await session.commit()
 
+    # Start scheduler for periodic jobs (pattern detection, insights, risk, reminders)
+    if settings.SCHEDULER_ENABLED:
+        from app.scheduler import configure_scheduler, scheduler
+
+        configure_scheduler()
+        scheduler.start()
+        logger.info("scheduler_started")
+
     logger.info("startup_complete", env=settings.APP_ENV, version=settings.APP_VERSION)
 
     yield
+
+    # Shutdown scheduler
+    if settings.SCHEDULER_ENABLED:
+        from app.scheduler import scheduler
+
+        scheduler.shutdown(wait=False)
+        logger.info("scheduler_stopped")
 
     await application.state.redis.aclose()
     await engine.dispose()
@@ -120,6 +135,7 @@ from app.routers import (  # noqa: E402
     payments,
     invite,
     privacy,
+    coach,
 )
 
 app.include_router(auth.router)
@@ -131,6 +147,7 @@ app.include_router(lessons.router)
 app.include_router(payments.router)
 app.include_router(invite.router)
 app.include_router(privacy.router)
+app.include_router(coach.router)
 
 
 # ---------------------------------------------------------------------------
